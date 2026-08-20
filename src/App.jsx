@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { usePokedexStore } from './services/pokedexStore'
 import { getPokemonList, getPokemonDetails } from './services/pokeapi'
 import PokemonCard from './components/PokemonCard'
 import PokemonModal from './components/PokemonModal'
@@ -15,6 +16,7 @@ function App() {
   const [page, setPage] = useState(1)
   const [limit] = useState(20)
   const [totalCount, setTotalCount] = useState(0)
+  const { activeType, setActiveType } = usePokedexStore()
 
   useEffect(() => {
     loadPokemons(1)
@@ -34,7 +36,7 @@ function App() {
           name: r.name,
           url: r.url,
           id,
-          sprite: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
+          sprite: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
         }
       })
       setPokemons(mapped)
@@ -46,11 +48,18 @@ function App() {
     }
   }
 
+
+
+
   function handlePageChange(newPage) {
     if (newPage < 1) return
     setPage(newPage)
     loadPokemons(newPage)
   }
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', activeType)
+  }, [activeType])
 
   async function handleSearch(e) {
     e.preventDefault()
@@ -77,6 +86,9 @@ function App() {
       setError(null)
       const pokemon = await getPokemonDetails(name)
       setSelected(pokemon)
+      const mainType = pokemon.types[0]?.type?.name
+      setActiveType(mainType)
+
     } catch (err) {
       setError('No se pudo cargar el detalle')
     } finally {
@@ -140,7 +152,14 @@ function App() {
               )}
             </section>
 
-            <PokemonModal pokemon={selected} onClose={() => setSelected(null)} />
+            <PokemonModal
+              pokemon={selected}
+              onClose={() => {
+                setSelected(null)
+                setActiveType('normal')
+              }}
+            />
+
           </main>
         </div>
       </Layout.Content>

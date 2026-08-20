@@ -5,19 +5,20 @@ export default function PokemonCard({ pokemon, onClick }) {
   return (
     <Card
       hoverable
+      className="glass-panel pokemon-card-glow"
       onClick={() => onClick(pokemon.name)}
       cover={
         <div style={{ display: 'flex', justifyContent: 'center', padding: 12 }}>
-              <img
-                src={pokemon.sprite || ''}
-                alt={pokemon.name}
-                style={{ width: 120, height: 120, imageRendering: 'pixelated' }}
-              />
+          <img
+            src={pokemon.sprite || ''}
+            alt={pokemon.name}
+            className="pokemon-card-image"
+          />
         </div>
       }
-          style={{ borderRadius: 12, minHeight: 220, padding: 12, width: 200, boxSizing: 'border-box' }}
     >
-      <div style={{ textAlign: 'center', fontWeight: 700, textTransform: 'capitalize' }}>{pokemon.name}</div>
+      <div className="pokemon-card-title">{pokemon.name}</div>
     </Card>
+
   )
 }

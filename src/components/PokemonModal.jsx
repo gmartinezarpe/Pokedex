@@ -12,7 +12,7 @@ export default function PokemonModal({ pokemon, onClose }) {
       footer={null}
     >
       <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-        <Image src={pokemon.sprites?.front_default} alt={pokemon.name} width={120} />
+        <Image src={pokemon.sprites?.other?.['official-artwork']?.front_default} alt={pokemon.name} width={160} />
         <Descriptions column={1} size="small">
           <Descriptions.Item label="ID">{pokemon.id}</Descriptions.Item>
           <Descriptions.Item label="Tipos">{pokemon.types.map((t) => t.type.name).join(', ')}</Descriptions.Item>
