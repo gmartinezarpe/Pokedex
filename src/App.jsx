@@ -4,31 +4,25 @@ import { getPokemonList, getPokemonDetails } from './services/pokeapi'
 import PokemonCard from './components/PokemonCard'
 import PokemonModal from './components/PokemonModal'
 import { Layout, Input, Button } from 'antd'
+import { useQuery } from '@tanstack/react-query'
 import 'antd/dist/reset.css'
 import './App.css'
 
 function App() {
-  const [pokemons, setPokemons] = useState([])
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [searchError, setSearchError] = useState(null) // Para errores de búsqueda
+  const [searchLoading, setSearchLoading] = useState(false) // Para loading de búsqueda
   const [page, setPage] = useState(1)
   const [limit] = useState(20)
-  const [totalCount, setTotalCount] = useState(0)
   const { activeType, setActiveType } = usePokedexStore()
 
-  useEffect(() => {
-    loadPokemons(1)
-  }, [])
 
-  async function loadPokemons(page = 1) {
-    try {
-      setLoading(true)
-      setError(null)
+  const { data: pokemonData, isLoading: isListLoading, error: listError } = useQuery({
+    queryKey: ['pokemons', page],
+    queryFn: async () => {
       const offset = (page - 1) * limit
       const data = await getPokemonList(limit, offset)
-      // map results to include id and sprite URL
       const mapped = data.results.map((r) => {
         const parts = r.url.split('/').filter(Boolean)
         const id = parts[parts.length - 1]
@@ -39,14 +33,13 @@ function App() {
           sprite: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
         }
       })
-      setPokemons(mapped)
-      setTotalCount(data.count)
-    } catch (err) {
-      setError('No se pudo cargar la lista')
-    } finally {
-      setLoading(false)
-    }
-  }
+      return {
+        results: mapped,
+        count: data.count,
+      }
+    },
+    placeholderData: (prev) => prev, // Mantiene los datos anteriores mientras carga la nueva página (evita parpadeos)
+  })
 
 
 
@@ -54,7 +47,6 @@ function App() {
   function handlePageChange(newPage) {
     if (newPage < 1) return
     setPage(newPage)
-    loadPokemons(newPage)
   }
 
   useEffect(() => {
@@ -65,36 +57,37 @@ function App() {
     e.preventDefault()
     if (!search) return
     try {
-      setLoading(true)
-      setError(null)
+      setSearchLoading(true)
+      setSearchError(null)
       const pokemon = await getPokemonDetails(search.toLowerCase().trim())
       setSelected(pokemon)
+      setActiveType(pokemon.types[0]?.type?.name)
     } catch (err) {
-      setError('Pokémon no encontrado')
+      setSearchError('Pokémon no encontrado')
     } finally {
-      setLoading(false)
+      setSearchLoading(false)
     }
   }
 
+
   const filteredPokemons = search
-    ? pokemons.filter((p) => p.name.includes(search.toLowerCase().trim()))
-    : pokemons
+    ? (pokemonData?.results || []).filter((p) => p.name.includes(search.toLowerCase().trim()))
+    : (pokemonData?.results || [])
 
   async function handleSelect(name) {
     try {
-      setLoading(true)
-      setError(null)
+      setSearchLoading(true)
+      setSearchError(null)
       const pokemon = await getPokemonDetails(name)
       setSelected(pokemon)
-      const mainType = pokemon.types[0]?.type?.name
-      setActiveType(mainType)
-
+      setActiveType(pokemon.types[0]?.type?.name)
     } catch (err) {
-      setError('No se pudo cargar el detalle')
+      setSearchError('No se pudo cargar el detalle')
     } finally {
-      setLoading(false)
+      setSearchLoading(false)
     }
   }
+
 
   return (
     <Layout style={{
@@ -125,8 +118,8 @@ function App() {
             </div>
           </header>
 
-          {error && <div className="error">{error}</div>}
-          {loading && <div className="loading">Cargando...</div>}
+          {searchError && <div className="error">{searchError}</div>}
+          {isListLoading && <div className="loading">Cargando...</div>}
 
           <main>
             <section className="pokemon-list">
@@ -135,11 +128,11 @@ function App() {
                 <div className="pagination">
                   <Button onClick={() => handlePageChange(page - 1)} disabled={page === 1}>Anterior</Button>
                   <span style={{ color: '#fff', margin: '0 12px' }}>Página {page}</span>
-                  <Button onClick={() => handlePageChange(page + 1)} disabled={page * limit >= totalCount}>Siguiente</Button>
+                  <Button onClick={() => handlePageChange(page + 1)} disabled={page * limit >= (pokemonData?.count || 0)}>Siguiente</Button>
                 </div>
               </div>
 
-              {filteredPokemons.length === 0 && !loading ? (
+              {filteredPokemons.length === 0 && !isListLoading ? (
                 <div style={{ color: '#fff' }}>No hay pokémon que coincidan.</div>
               ) : (
                 <div className="cards">
