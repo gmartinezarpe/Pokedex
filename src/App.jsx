@@ -3,10 +3,13 @@ import { usePokedexStore } from './services/pokedexStore'
 import { getPokemonList, getPokemonDetails } from './services/pokeapi'
 import PokemonCard from './components/PokemonCard'
 import PokemonModal from './components/PokemonModal'
-import { Layout, Input, Button } from 'antd'
+import TeamBuilder from './components/TeamBuilder'
+import ComparePokemon from './components/ComparePokemon'
+import { Layout, Input, Button, Tabs, Badge } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import 'antd/dist/reset.css'
 import './App.css'
+
 
 function App() {
   const [search, setSearch] = useState('')
@@ -15,7 +18,7 @@ function App() {
   const [searchLoading, setSearchLoading] = useState(false) // Para loading de búsqueda
   const [page, setPage] = useState(1)
   const [limit] = useState(20)
-  const { activeType, setActiveType } = usePokedexStore()
+  const { team, compareList, activeType, setActiveType } = usePokedexStore()
 
 
   const { data: pokemonData, isLoading: isListLoading, error: listError } = useQuery({
@@ -122,28 +125,57 @@ function App() {
           {isListLoading && <div className="loading">Cargando...</div>}
 
           <main>
-            <section className="pokemon-list">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ color: '#fff' }}>Lista de pokémon</h2>
-                <div className="pagination">
-                  <Button onClick={() => handlePageChange(page - 1)} disabled={page === 1}>Anterior</Button>
-                  <span style={{ color: '#fff', margin: '0 12px' }}>Página {page}</span>
-                  <Button onClick={() => handlePageChange(page + 1)} disabled={page * limit >= (pokemonData?.count || 0)}>Siguiente</Button>
-                </div>
-              </div>
-
-              {filteredPokemons.length === 0 && !isListLoading ? (
-                <div style={{ color: '#fff' }}>No hay pokémon que coincidan.</div>
-              ) : (
-                <div className="cards">
-                  {filteredPokemons.map((pokemon) => (
-                    <div key={pokemon.name} style={{ display: 'flex', justifyContent: 'center' }}>
-                      <PokemonCard pokemon={pokemon} onClick={handleSelect} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+            <Tabs
+              defaultActiveKey="pokedex"
+              style={{ color: '#fff' }}
+              items={[
+                {
+                  key: 'pokedex',
+                  label: '📖 Pokédex',
+                  children: (
+                    <section className="pokemon-list">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ color: '#fff' }}>Lista de Pokémon</h2>
+                        <div className="pagination">
+                          <Button onClick={() => handlePageChange(page - 1)} disabled={page === 1}>Anterior</Button>
+                          <span style={{ color: '#fff', margin: '0 12px' }}>Página {page}</span>
+                          <Button onClick={() => handlePageChange(page + 1)} disabled={page * limit >= (pokemonData?.count || 0)}>Siguiente</Button>
+                        </div>
+                      </div>
+                      {filteredPokemons.length === 0 && !isListLoading ? (
+                        <div style={{ color: '#fff' }}>No hay pokémon que coincidan.</div>
+                      ) : (
+                        <div className="cards">
+                          {filteredPokemons.map((pokemon) => (
+                            <div key={pokemon.name} style={{ display: 'flex', justifyContent: 'center' }}>
+                              <PokemonCard pokemon={pokemon} onClick={handleSelect} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  )
+                },
+                {
+                  key: 'team',
+                  label: (
+                    <Badge count={team.length} size="small" color="#10b981" offset={[8, 0]}>
+                      🛡️ Mi Equipo
+                    </Badge>
+                  ),
+                  children: <TeamBuilder />
+                },
+                {
+                  key: 'compare',
+                  label: (
+                    <Badge count={compareList.length} size="small" color="#1890ff" offset={[8, 0]}>
+                      ⚔️ VS
+                    </Badge>
+                  ),
+                  children: <ComparePokemon />
+                }
+              ]}
+            />
 
             <PokemonModal
               pokemon={selected}
@@ -152,8 +184,8 @@ function App() {
                 setActiveType('normal')
               }}
             />
-
           </main>
+
         </div>
       </Layout.Content>
     </Layout>
